@@ -1,27 +1,42 @@
 import pygame
 import random
 
-# Colores
+# Color definitions (RGB)
 GREEN = (0, 255, 0)
+
 
 class Item:
     def __init__(self, grid_x, grid_y, grid):
-        # Posición en la cuadrícula
+        """
+        Initializes an item at a specific position on the grid with random attributes.
+
+        Parameters:
+        - grid_x: horizontal position on the grid
+        - grid_y: vertical position on the grid
+        - grid: reference to the grid object (assumed to have cell_size attribute)
+        """
         self.grid_x = grid_x
         self.grid_y = grid_y
-        # Referencia a la cuadrícula
         self.grid = grid
-        # Radio del ítem (pequeño punto verde)
+
+        # Define the radius of the item (a small green dot)
         self.radius = grid.cell_size // 6
-        # Posición en píxeles para dibujar
+
+        # Calculate pixel coordinates for drawing (centered within the grid cell)
         self.x = (grid_x + 0.5) * grid.cell_size
         self.y = (grid_y + 0.5) * grid.cell_size
-        
-        # Nuevos atributos del ítem con valores aleatorios entre 0 y 1
-        self.size = round(random.random(), 2)       # Tamaño del ítem
-        self.fragility = round(random.random(), 2)  # Fragilidad del ítem
-        self.priority = round(random.random(), 2)   # Prioridad del ítem
-        
+
+        # Randomly generate item attributes between 0 and 1
+        self.size = round(random.random(), 2)  # Size of the item (0 to 1)
+        self.fragility = round(random.random(), 2)  # Fragility of the item (0 to 1)
+        self.priority = round(random.random(), 2)  # Priority of the item (0 to 1)
+
     def draw(self, screen):
-        # Dibujar un pequeño círculo verde
+        """
+        Draws the item as a small green circle on the screen.
+
+        Parameters:
+        - screen: the Pygame surface to draw on
+        """
+        # Draw the item as a small green circle at its calculated position
         pygame.draw.circle(screen, GREEN, (self.x, self.y), self.radius)

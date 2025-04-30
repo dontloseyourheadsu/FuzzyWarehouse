@@ -1,4 +1,3 @@
-# main.py
 import pygame
 import sys
 import random
@@ -9,7 +8,7 @@ from obstaclegenerator import ObstacleGenerator
 from dropzone import DropZone
 from fuzzy_logic import classify_item, ItemAttributes
 
-# Inicializar pygame
+# Initialize pygame
 pygame.init()
 SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
 CELL_SIZE = 50
@@ -38,7 +37,7 @@ class Grid:
                                       self.cell_size, self.cell_size))
 
 def find_nearest_free(robot, tx, ty, grid):
-    """Devuelve la casilla vecina (udlr) de (tx,ty) libre y más cercana al robot."""
+    """Returns the free neighboring cell (udlr) of (tx,ty) closest to the robot."""
     cands = []
     for dx,dy in [(0,-1),(0,1),(-1,0),(1,0)]:
         nx,ny = tx+dx, ty+dy
@@ -52,14 +51,14 @@ def main():
     clock = pygame.time.Clock()
     grid = Grid(SCREEN_WIDTH, SCREEN_HEIGHT, CELL_SIZE)
 
-    # Generadores
+    # Setup item generators along the left side
     generators = []
     for i in range(4):
         gy = i*3+2
         if gy < grid.rows:
             generators.append(ItemGenerator(0, gy, grid))
 
-    # Zonas de entrega
+    # Setup delivery zones along the right side
     dropzones = []
     right = grid.cols - 1
     spacing = grid.rows // 6
@@ -68,7 +67,7 @@ def main():
         if gy < grid.rows:
             dropzones.append(DropZone(right, gy, grid, name=f"Z{i+1}"))
 
-    # Robots
+    # Create robots at random positions
     robots = []
     used = set()
     while len(robots) < 4:
@@ -78,15 +77,15 @@ def main():
             used.add((gx,gy))
             robots.append(Robot(gx, gy, CELL_SIZE//3, grid))
 
-    # Obstáculos
+    # Generate obstacles randomly throughout the grid
     ObstacleGenerator(grid, obstacle_ratio=0.15).generate_obstacles()
 
-    move_delay = 500
-    item_delay = 2000
+    move_delay = 500  # Milliseconds between robot moves
+    item_delay = 2000  # Milliseconds between item generation attempts
     last_move = pygame.time.get_ticks()
     last_gen  = pygame.time.get_ticks()
 
-    pending = []  # generadores con ítem esperando robot
+    pending = []  # Generators with items waiting for a robot
 
     while True:
         now = pygame.time.get_ticks()
@@ -94,42 +93,42 @@ def main():
             if e.type == pygame.QUIT:
                 pygame.quit(); sys.exit()
 
-        # Generar ítem
+        # Generate new items
         if now - last_gen > item_delay:
             for gen in generators:
                 if gen.generate_item():
                     pending.append(gen)
             last_gen = now
 
-        # Asignar pickup a robot libre
+        # Assign pickup tasks to free robots
         for gen in pending[:]:
             free_r = next((r for r in robots if r.state == FREE), None)
             if free_r:
-                # marcar carga
+                # Mark robot as carrying an item with attributes
                 it = gen.current_item
                 free_r.carrying_item = ItemAttributes(it.size, it.fragility, it.priority)
                 free_r.set_state(PICKUP)
                 free_r.pickup_target = gen
-                # destino = celda vecina libre
+                # Find available adjacent cell to the generator
                 dest = find_nearest_free(free_r, gen.grid_x, gen.grid_y, grid)
                 if dest:
                     free_r.move_to(dest[0], dest[1])
                     pending.remove(gen)
 
-        # Mover robots
+        # Move robots at regular intervals if not currently animating
         if now - last_move > move_delay:
             if not any(r.animating for r in robots):
                 for r in robots:
                     r.perform_move()
                 last_move = now
 
-        # Comprobar pickup / delivery
+        # Check for pickup and delivery completions
         for r in robots:
-            # Si llegó al vecino del generador → pickup
+            # If robot reached generator neighbor → perform pickup
             if r.state == PICKUP and not r.animating and not r.path:
                 gen = r.pickup_target
                 gen.remove_item()
-                # decidir zona y vecino
+                # Use fuzzy logic to decide which zone to deliver to
                 zone = classify_item(r.carrying_item)
                 dz   = next(z for z in dropzones if z.name == zone)
                 r.set_state(DELIVERING)
@@ -138,14 +137,14 @@ def main():
                 if d2:
                     r.move_to(d2[0], d2[1])
 
-            # Si llegó al vecino de la zona → delivery
+            # If robot reached delivery zone neighbor → complete delivery
             if r.state == DELIVERING and not r.animating and not r.path:
                 r.carrying_item = None
                 r.pickup_target  = None
                 r.delivery_target = None
                 r.set_state(FREE)
 
-        # Draw
+        # Draw everything
         for r in robots: r.update()
         screen.fill(WHITE)
         grid.draw(screen)

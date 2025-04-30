@@ -1,6 +1,5 @@
 import random
 
-
 class ObstacleGenerator:
     def __init__(self, grid, obstacle_ratio=0.2):
         self.grid = grid
