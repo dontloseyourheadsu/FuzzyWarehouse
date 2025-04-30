@@ -6,7 +6,6 @@ from item import Item  # Import the Item class from another module
 BLACK = (0, 0, 0)
 GREEN = (0, 255, 0)
 
-
 class ItemGenerator:
     def __init__(self, grid_x, grid_y, grid):
         """
