@@ -29,6 +29,13 @@ class DropZone:
 
         # Store the optional name of the drop zone
         self.name = name
+        
+        # Counter for items received
+        self.items_received = 0
+
+    def add_item(self):
+        """Increment the counter for received items"""
+        self.items_received += 1
 
     def draw(self, screen):
         """

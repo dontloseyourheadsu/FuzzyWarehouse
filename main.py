@@ -10,14 +10,19 @@ from fuzzy_logic import classify_item, ItemAttributes
 
 # Initialize pygame
 pygame.init()
-SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
+# Increase window width to accommodate info panels
+SCREEN_WIDTH, SCREEN_HEIGHT = 1200, 600
+GRID_WIDTH, GRID_HEIGHT = 800, 600  # Original grid dimensions
+INFO_PANEL_WIDTH = 200  # Width for each info panel
 CELL_SIZE = 50
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("Grid Example")
+pygame.display.set_caption("Fuzzy Warehouse Simulation")
 
 WHITE = (255,255,255)
 BLACK = (0,0,0)
 BROWN = (139,69,19)
+LIGHT_GRAY = (220,220,220)
+DARK_GRAY = (100,100,100)
 
 class Grid:
     def __init__(self, w,h,cs):
@@ -47,9 +52,82 @@ def find_nearest_free(robot, tx, ty, grid):
         return None
     return min(cands, key=lambda p: abs(p[0]-robot.grid_x)+abs(p[1]-robot.grid_y))
 
+def draw_info_panels(screen, generators, dropzones):
+    """Draw information panels for generators and dropzones"""
+    # Left panel (Generators)
+    pygame.draw.rect(screen, LIGHT_GRAY, (0, 0, INFO_PANEL_WIDTH, SCREEN_HEIGHT))
+    pygame.draw.line(screen, BLACK, (INFO_PANEL_WIDTH, 0), (INFO_PANEL_WIDTH, SCREEN_HEIGHT), 2)
+    
+    # Right panel (Dropzones)
+    pygame.draw.rect(screen, LIGHT_GRAY, (INFO_PANEL_WIDTH + GRID_WIDTH, 0, INFO_PANEL_WIDTH, SCREEN_HEIGHT))
+    pygame.draw.line(screen, BLACK, (INFO_PANEL_WIDTH + GRID_WIDTH, 0), 
+                    (INFO_PANEL_WIDTH + GRID_WIDTH, SCREEN_HEIGHT), 2)
+    
+    # Draw panel titles
+    font_title = pygame.font.SysFont('Arial', 20, bold=True)
+    font_regular = pygame.font.SysFont('Arial', 16)
+    font_small = pygame.font.SysFont('Arial', 14)
+    
+    # Generators panel title
+    title = font_title.render("Item Generators", True, BLACK)
+    screen.blit(title, (10, 10))
+    
+    # Draw info for each generator
+    for i, gen in enumerate(generators):
+        y_pos = 50 + i * 120
+        
+        # Generator label
+        gen_label = font_regular.render(f"Generator {i+1}", True, BLACK)
+        screen.blit(gen_label, (10, y_pos))
+        
+        # Draw separator line
+        pygame.draw.line(screen, DARK_GRAY, (10, y_pos + 25), (INFO_PANEL_WIDTH - 10, y_pos + 25), 1)
+        
+        # Item info
+        if gen.current_item:
+            item_text = font_regular.render("Current Item:", True, BLACK)
+            screen.blit(item_text, (10, y_pos + 35))
+            
+            # Item attributes
+            size_text = font_small.render(f"Size: {gen.current_item.size}", True, BLACK)
+            screen.blit(size_text, (20, y_pos + 60))
+            
+            frag_text = font_small.render(f"Fragility: {gen.current_item.fragility}", True, BLACK)
+            screen.blit(frag_text, (20, y_pos + 80))
+            
+            prio_text = font_small.render(f"Priority: {gen.current_item.priority}", True, BLACK)
+            screen.blit(prio_text, (20, y_pos + 100))
+        else:
+            no_item = font_regular.render("No item", True, BLACK)
+            screen.blit(no_item, (10, y_pos + 60))
+    
+    # Dropzones panel title
+    title = font_title.render("Delivery Zones", True, BLACK)
+    screen.blit(title, (INFO_PANEL_WIDTH + GRID_WIDTH + 10, 10))
+    
+    # Draw info for each dropzone
+    for i, zone in enumerate(dropzones):
+        y_pos = 50 + i * 80
+        
+        # Zone label
+        zone_label = font_regular.render(f"Zone {zone.name}", True, BLACK)
+        screen.blit(zone_label, (INFO_PANEL_WIDTH + GRID_WIDTH + 10, y_pos))
+        
+        # Draw separator line
+        pygame.draw.line(screen, DARK_GRAY, 
+                         (INFO_PANEL_WIDTH + GRID_WIDTH + 10, y_pos + 25),
+                         (SCREEN_WIDTH - 10, y_pos + 25), 1)
+        
+        # Items received
+        items_text = font_regular.render(f"Items received: {zone.items_received}", True, BLACK)
+        screen.blit(items_text, (INFO_PANEL_WIDTH + GRID_WIDTH + 10, y_pos + 40))
+
 def main():
     clock = pygame.time.Clock()
-    grid = Grid(SCREEN_WIDTH, SCREEN_HEIGHT, CELL_SIZE)
+    
+    # Offset the grid to account for the left info panel
+    grid_offset_x = INFO_PANEL_WIDTH
+    grid = Grid(GRID_WIDTH, GRID_HEIGHT, CELL_SIZE)
 
     # Setup item generators along the left side
     generators = []
@@ -139,6 +217,8 @@ def main():
 
             # If robot reached delivery zone neighbor → complete delivery
             if r.state == DELIVERING and not r.animating and not r.path:
+                # Add item to the dropzone counter
+                r.delivery_target.add_item()
                 r.carrying_item = None
                 r.pickup_target  = None
                 r.delivery_target = None
@@ -147,10 +227,22 @@ def main():
         # Draw everything
         for r in robots: r.update()
         screen.fill(WHITE)
-        grid.draw(screen)
-        for g in generators: g.draw(screen)
-        for z in dropzones:   z.draw(screen)
-        for r in robots:      r.draw(screen)
+        
+        # Draw info panels
+        draw_info_panels(screen, generators, dropzones)
+        
+        # Draw grid with offset for the left panel
+        pygame.Surface.subsurface(screen, (INFO_PANEL_WIDTH, 0, GRID_WIDTH, GRID_HEIGHT)).fill(WHITE)
+        grid.draw(pygame.Surface.subsurface(screen, (INFO_PANEL_WIDTH, 0, GRID_WIDTH, GRID_HEIGHT)))
+        
+        # Draw game elements with offset
+        for g in generators:
+            g.draw(pygame.Surface.subsurface(screen, (INFO_PANEL_WIDTH, 0, GRID_WIDTH, GRID_HEIGHT)))
+        for z in dropzones:
+            z.draw(pygame.Surface.subsurface(screen, (INFO_PANEL_WIDTH, 0, GRID_WIDTH, GRID_HEIGHT)))
+        for r in robots:
+            r.draw(pygame.Surface.subsurface(screen, (INFO_PANEL_WIDTH, 0, GRID_WIDTH, GRID_HEIGHT)))
+        
         pygame.display.flip()
         clock.tick(60)
 
