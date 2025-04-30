@@ -10,10 +10,11 @@ from fuzzy_logic import classify_item, ItemAttributes
 
 # Initialize pygame
 pygame.init()
-# Increase window width to accommodate info panels
-SCREEN_WIDTH, SCREEN_HEIGHT = 1200, 600
+# Increase window height to accommodate the bottom robot info panel
+SCREEN_WIDTH, SCREEN_HEIGHT = 1200, 800  # Increased height from 600 to 800
 GRID_WIDTH, GRID_HEIGHT = 800, 600  # Original grid dimensions
 INFO_PANEL_WIDTH = 200  # Width for each info panel
+BOTTOM_PANEL_HEIGHT = 200  # Height for the bottom robot info panel
 CELL_SIZE = 50
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Fuzzy Warehouse Simulation")
@@ -55,13 +56,13 @@ def find_nearest_free(robot, tx, ty, grid):
 def draw_info_panels(screen, generators, dropzones):
     """Draw information panels for generators and dropzones"""
     # Left panel (Generators)
-    pygame.draw.rect(screen, LIGHT_GRAY, (0, 0, INFO_PANEL_WIDTH, SCREEN_HEIGHT))
-    pygame.draw.line(screen, BLACK, (INFO_PANEL_WIDTH, 0), (INFO_PANEL_WIDTH, SCREEN_HEIGHT), 2)
+    pygame.draw.rect(screen, LIGHT_GRAY, (0, 0, INFO_PANEL_WIDTH, GRID_HEIGHT))
+    pygame.draw.line(screen, BLACK, (INFO_PANEL_WIDTH, 0), (INFO_PANEL_WIDTH, GRID_HEIGHT), 2)
     
     # Right panel (Dropzones)
-    pygame.draw.rect(screen, LIGHT_GRAY, (INFO_PANEL_WIDTH + GRID_WIDTH, 0, INFO_PANEL_WIDTH, SCREEN_HEIGHT))
+    pygame.draw.rect(screen, LIGHT_GRAY, (INFO_PANEL_WIDTH + GRID_WIDTH, 0, INFO_PANEL_WIDTH, GRID_HEIGHT))
     pygame.draw.line(screen, BLACK, (INFO_PANEL_WIDTH + GRID_WIDTH, 0), 
-                    (INFO_PANEL_WIDTH + GRID_WIDTH, SCREEN_HEIGHT), 2)
+                    (INFO_PANEL_WIDTH + GRID_WIDTH, GRID_HEIGHT), 2)
     
     # Draw panel titles
     font_title = pygame.font.SysFont('Arial', 20, bold=True)
@@ -121,6 +122,71 @@ def draw_info_panels(screen, generators, dropzones):
         # Items received
         items_text = font_regular.render(f"Items received: {zone.items_received}", True, BLACK)
         screen.blit(items_text, (INFO_PANEL_WIDTH + GRID_WIDTH + 10, y_pos + 40))
+
+def draw_robot_panel(screen, robots, generators):
+    """Draw information panel for robots at the bottom of the screen"""
+    # Bottom panel background
+    pygame.draw.rect(screen, LIGHT_GRAY, (0, GRID_HEIGHT, SCREEN_WIDTH, BOTTOM_PANEL_HEIGHT))
+    pygame.draw.line(screen, BLACK, (0, GRID_HEIGHT), (SCREEN_WIDTH, GRID_HEIGHT), 2)
+    
+    # Fonts
+    font_title = pygame.font.SysFont('Arial', 20, bold=True)
+    font_regular = pygame.font.SysFont('Arial', 16)
+    font_small = pygame.font.SysFont('Arial', 14)
+    
+    # Panel title
+    title = font_title.render("Robot Status", True, BLACK)
+    screen.blit(title, (10, GRID_HEIGHT + 10))
+    
+    # Draw info for each robot
+    robot_width = SCREEN_WIDTH // len(robots) if robots else SCREEN_WIDTH
+    
+    for i, robot in enumerate(robots):
+        x_pos = i * robot_width
+        y_pos = GRID_HEIGHT + 40
+        
+        # Robot section border
+        pygame.draw.line(screen, DARK_GRAY, (x_pos, GRID_HEIGHT), (x_pos, SCREEN_HEIGHT), 1)
+        
+        # Robot label
+        robot_label = font_regular.render(f"Robot {i+1}", True, BLACK)
+        screen.blit(robot_label, (x_pos + 10, y_pos))
+        
+        # Status line (FREE/PICKUP/DELIVERING)
+        state_text = font_regular.render(f"Status: {robot.state}", True, BLACK)
+        screen.blit(state_text, (x_pos + 10, y_pos + 25))
+        
+        # Target information
+        target_text = "Target: "
+        if robot.state == PICKUP and robot.pickup_target:
+            # Find generator index
+            gen_index = next((i+1 for i, g in enumerate(generators) 
+                             if g == robot.pickup_target), "?")
+            target_text += f"Generator {gen_index}"
+        elif robot.state == DELIVERING and robot.delivery_target:
+            target_text += f"Zone {robot.delivery_target.name}"
+        else:
+            target_text += "No target"
+            
+        target_render = font_regular.render(target_text, True, BLACK)
+        screen.blit(target_render, (x_pos + 10, y_pos + 50))
+        
+        # Item information if carrying one
+        if robot.carrying_item:
+            item_title = font_regular.render("Carrying Item:", True, BLACK)
+            screen.blit(item_title, (x_pos + 10, y_pos + 75))
+            
+            size_text = font_small.render(f"Size: {robot.carrying_item.size:.2f}", True, BLACK)
+            screen.blit(size_text, (x_pos + 15, y_pos + 100))
+            
+            frag_text = font_small.render(f"Fragility: {robot.carrying_item.fragility:.2f}", True, BLACK)
+            screen.blit(frag_text, (x_pos + 15, y_pos + 120))
+            
+            prio_text = font_small.render(f"Priority: {robot.carrying_item.priority:.2f}", True, BLACK)
+            screen.blit(prio_text, (x_pos + 15, y_pos + 140))
+        else:
+            no_item = font_regular.render("Not carrying an item", True, BLACK)
+            screen.blit(no_item, (x_pos + 10, y_pos + 75))
 
 def main():
     clock = pygame.time.Clock()
@@ -242,6 +308,9 @@ def main():
             z.draw(pygame.Surface.subsurface(screen, (INFO_PANEL_WIDTH, 0, GRID_WIDTH, GRID_HEIGHT)))
         for r in robots:
             r.draw(pygame.Surface.subsurface(screen, (INFO_PANEL_WIDTH, 0, GRID_WIDTH, GRID_HEIGHT)))
+        
+        # Draw the robot info panel at the bottom
+        draw_robot_panel(screen, robots, generators)
         
         pygame.display.flip()
         clock.tick(60)
