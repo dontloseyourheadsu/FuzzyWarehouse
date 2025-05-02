@@ -155,3 +155,17 @@ Handles fuzzy classification of items into delivery zones.
 
 ### Rendering:
 - Draws the robot’s body, state hat, and direction eye.
+
+## App screenshots
+
+### Collecting items
+Here we can observe two robots that were notified about two new items. They are heading to the generators for pickup.
+![Collecting items](./screenshots/collecting_items.png)
+
+### Delivering items
+The two robots head to delivery, one of them is ahead of the other. They're heading to the same zone.
+![Delivering items](./screenshots/item_delivery.png)
+
+### Path finding
+One of the robots that delivered to zone Z5 is heading for a new pickup. If they headed through the same path they would collide, but the collision avoidance algorithm with random path finding allows the robots to continue their paths without colliding.
+![Pathfinding](./screenshots/path_finding.png)
