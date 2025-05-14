@@ -8,10 +8,22 @@ class ItemAttributes:
 
 def low(x):
     # Membership function for "low" fuzzy set: 1.0 at x=0.2, decreasing to 0.0 at x=0.5
+    """
+    Membership function for the 'low' fuzzy set.
+    - Full membership (1.0) at x = 0.2.
+    - Linearly decreases to 0.0 at x = 0.5.
+    - Returns 0.0 for x > 0.5.
+    """
     return max(0.0, min(1.0, (0.5 - x) / 0.3)) if x <= 0.5 else 0.0
 
 def medium(x):
     # Triangular membership function for "medium" fuzzy set: 0 at x=0.2, 1 at x=0.5, 0 at x=0.8
+    """
+    Triangular membership function for the 'medium' fuzzy set.
+    - 0.0 at x = 0.2.
+    - Peaks at 1.0 when x = 0.5.
+    - Returns to 0.0 at x = 0.8.
+    """
     if 0.2 < x < 0.5:
         return (x - 0.2) / 0.3
     elif 0.5 <= x < 0.8:
@@ -20,6 +32,12 @@ def medium(x):
 
 def high(x):
     # Membership function for "high" fuzzy set: 0.0 at x=0.5, increasing to 1.0 at x=0.8
+    """
+    Triangular membership function for the 'medium' fuzzy set.
+    - 0.0 at x = 0.2.
+    - Peaks at 1.0 when x = 0.5.
+    - Returns to 0.0 at x = 0.8.
+    """
     return max(0.0, min(1.0, (x - 0.5) / 0.3)) if x >= 0.5 else 0.0
 
 def classify_item(item_attr):
